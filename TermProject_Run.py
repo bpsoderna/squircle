@@ -5,7 +5,6 @@ from class_figure import *
 from class_errorbox import *
 from class_trashcan import *
 from class_textbox import *
-from class_variableInstance import *
 
 from TermProject_Model import *
 from TermProject_Control import *

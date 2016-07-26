@@ -1,6 +1,5 @@
 from class_textbox import *
 from class_figure import *
-from class_variableInstance import *
 import random
 
 ####################################
@@ -208,8 +207,26 @@ class Block(object):
             if not block.overlap:
                 x1, y1 = block.x, block.y
                 w1, h1 = block.width, block.height
-                if ((((x1>=x) and (x1<=x+w)) or ((x>=x1) and (x<=x1+w1))) and 
-                    (((y1>=y) and (y1<=y+h)) or ((y>=y1) and (y<=y1+h1)))):
+                try: 
+                    x2,y2, w2, h2 = self.x2, self.y2, self.w2, self.h2
+                    cond2 = ((((x1>=x2) and (x1<=x2+w2)) or ((x2>=x1) and (x2<=x1+w1))) and 
+                             (((y1>=y2) and (y1<=y2+h2)) or ((y2>=y1) and (y2<=y1+h1))))
+                    x3,y3, w3, h3 = self.x3, self.y3, self.w3, self.h3
+                    cond3 = ((((x1>=x3) and (x1<=x3+w3)) or ((x3>=x1) and (x3<=x1+w1))) and 
+                             (((y1>=y3) and (y1<=y3+h3)) or ((y3>=y1) and (y3<=y1+h1))))
+                except:
+                    try:
+                        x2,y2, w2, h2 = block.x2, block.y2, block.w2, block.h2
+                        cond2 = ((((x>=x2) and (x<=x2+w2)) or ((x2>=x) and (x2<=x+w))) and 
+                                 (((y>=y2) and (y<=y2+h2)) or ((y2>=y) and (y2<=y+h))))
+                        x3,y3,w3,h3 = block.x3,block.y3,block.w3,block.h3
+                        cond3 = ((((x>=x3) and (x<=x3+w3)) or ((x3>=x) and (x3<=x+w))) and 
+                                 (((y>=y3) and (y<=y3+h3)) or ((y3>=y) and (y3<=y+h))))
+                    except: 
+                        cond2 = False
+                        cond3 = False
+                if (((((x1>=x) and (x1<=x+w)) or ((x>=x1) and (x<=x1+w1))) and 
+                     (((y1>=y) and (y1<=y+h)) or ((y>=y1) and (y<=y1+h1)))) or cond2 or cond3):
                     block.overlap = True
                     block.dx = xClick - x1
                     block.dy = yClick - y1
@@ -328,23 +345,6 @@ class IfBlock(Block):
             self.overlap = False
             self.front = True
 
-    def findConnected(self,blocksList,xClick=0,yClick=0): 
-    #uses recursion to figure out which blocks are connected
-        x, y, w, h = self.x, self.y, self.width, self.height
-        x3,y3, w3, h3 = self.x3, self.y3, self.w3, self.h3
-        for block in blocksList:
-            if not block.overlap:
-                x1, y1 = block.x, block.y
-                w1, h1 = block.width, block.height
-                if (((((x1>=x) and (x1<=x+w)) or ((x>=x1) and (x<=x1+w1))) and 
-                     (((y1>=y) and (y1<=y+h)) or ((y>=y1) and (y<=y1+h1)))) or 
-                    ((((x1>=x3) and (x1<=x3+w3)) or ((x3>=x1) and (x3<=x1+w1))) and 
-                     (((y1>=y3) and (y1<=y3+h3)) or ((y3>=y1) and (y3<=y1+h1))))):
-                    block.overlap = True
-                    block.dx = xClick - x1
-                    block.dy = yClick - y1
-                    block.findConnected(blocksList, xClick, yClick)
-
     def moveTextbox(self):
         self.variableBox.x = self.x + 30
         self.variableBox.y = self.y + self.margin
@@ -363,11 +363,11 @@ class IfBlock(Block):
 
     def evaluate(self,variables):
         self.ran = True
-        print("   evaluating...",end="")
+        #print("   evaluating...",end="")
         for var in variables:
             if var.name == self.name.name:
                 self.variableBlock = var
-        print(self.variableBlock.value, "?=", self.result, ":", self.variableBlock.value == self.result)
+        #print(self.variableBlock.value, "?=", self.result, ":", self.variableBlock.value == self.result)
         return self.variableBlock.value == self.result
 
     def draw(self,canvas,canvasBounds,trashcan):
@@ -397,7 +397,7 @@ class IfBlock(Block):
                 textbox.draw(canvas)
 
 ####################################
-# If Block Class
+# If Math Block Class
 ####################################
 
 class IfMathBlock(Block):
@@ -479,23 +479,6 @@ class IfMathBlock(Block):
             self.overlap = False
             self.front = True
 
-    def findConnected(self,blocksList,xClick=0,yClick=0): 
-    #uses recursion to figure out which blocks are connected
-        x, y, w, h = self.x, self.y, self.width, self.height
-        x3,y3, w3, h3 = self.x3, self.y3, self.w3, self.h3
-        for block in blocksList:
-            if not block.overlap:
-                x1, y1 = block.x, block.y
-                w1, h1 = block.width, block.height
-                if (((((x1>=x) and (x1<=x+w)) or ((x>=x1) and (x<=x1+w1))) and 
-                     (((y1>=y) and (y1<=y+h)) or ((y>=y1) and (y<=y1+h1)))) or 
-                    ((((x1>=x3) and (x1<=x3+w3)) or ((x3>=x1) and (x3<=x1+w1))) and 
-                     (((y1>=y3) and (y1<=y3+h3)) or ((y3>=y1) and (y3<=y1+h1))))):
-                    block.overlap = True
-                    block.dx = xClick - x1
-                    block.dy = yClick - y1
-                    block.findConnected(blocksList, xClick, yClick)
-
     def moveTextbox(self):
         self.variableBox.x = self.x + 30
         self.variableBox.y = self.y + self.margin
@@ -562,7 +545,7 @@ class IfMathBlock(Block):
                 textbox.draw(canvas)
 
 ####################################
-# If Block Class
+# If Touching Block Class
 ####################################
 
 class IfTouchingBlock(Block):
@@ -641,23 +624,6 @@ class IfTouchingBlock(Block):
     def shrink(self,x,y):
         if self.growButton.wasClicked(x,y):
             self.h2 -= 20
-
-    def findConnected(self,blocksList,xClick=0,yClick=0): 
-    #uses recursion to figure out which blocks are connected
-        x, y, w, h = self.x, self.y, self.width, self.height
-        x3,y3, w3, h3 = self.x3, self.y3, self.w3, self.h3
-        for block in blocksList:
-            if not block.overlap:
-                x1, y1 = block.x, block.y
-                w1, h1 = block.width, block.height
-                if (((((x1>=x) and (x1<=x+w)) or ((x>=x1) and (x<=x1+w1))) and 
-                     (((y1>=y) and (y1<=y+h)) or ((y>=y1) and (y<=y1+h1)))) or 
-                    ((((x1>=x3) and (x1<=x3+w3)) or ((x3>=x1) and (x3<=x1+w1))) and 
-                     (((y1>=y3) and (y1<=y3+h3)) or ((y3>=y1) and (y3<=y1+h1))))):
-                    block.overlap = True
-                    block.dx = xClick - x1
-                    block.dy = yClick - y1
-                    block.findConnected(blocksList, xClick, yClick)
 
     def moveTextbox(self):
         self.selectFigure1Box.x = self.x + 30
@@ -812,26 +778,6 @@ class IfElseBlock(Block):
             self.overlap = False
             self.front = True
 
-    def findConnected(self,blocksList,xClick=0,yClick=0): #FIXXX
-    #uses recursion to figure out which blocks are connected
-        x, y, w, h = self.x, self.y, self.width, self.height
-        x3, y3, w3, h3 = self.x3, self.y3, self.w3, self.h3
-        x4, y4, w4, h4 = self.x4, self.y4, self.w4, self.h4
-        for block in blocksList:
-            if not block.overlap:
-                x1, y1 = block.x, block.y
-                w1, h1 = block.width, block.height
-                if (((((x1>=x) and (x1<=x+w)) or ((x>=x1) and (x<=x1+w1))) and 
-                     (((y1>=y) and (y1<=y+h)) or ((y>=y1) and (y<=y1+h1)))) or 
-                    ((((x1>=x3) and (x1<=x3+w3)) or ((x3>=x1) and (x3<=x1+w1))) and 
-                     (((y1>=y3) and (y1<=y3+h3)) or ((y3>=y1) and (y3<=y1+h1)))) or 
-                    ((((x1>=x4) and (x1<=x4+w4)) or ((x4>=x1) and (x3<=x1+w1))) and 
-                     (((y1>=y4) and (y1<=y4+h4)) or ((y4>=y1) and (y3<=y1+h1))))):
-                    block.overlap = True
-                    block.dx = xClick - x1
-                    block.dy = yClick - y1
-                    block.findConnected(blocksList, xClick, yClick)
-
     def moveTextbox(self):
         self.variableBox.x = self.x + 30
         self.variableBox.y = self.y + self.margin
@@ -964,23 +910,6 @@ class IfKeyPressedBlock(Block):
             self.overlap = False
             self.front = True
 
-    def findConnected(self,blocksList,xClick=0,yClick=0): 
-    #uses recursion to figure out which blocks are connected
-        x, y, w, h = self.x, self.y, self.width, self.height
-        x3,y3, w3, h3 = self.x3, self.y3, self.w3, self.h3
-        for block in blocksList:
-            if not block.overlap:
-                x1, y1 = block.x, block.y
-                w1, h1 = block.width, block.height
-                if (((((x1>=x) and (x1<=x+w)) or ((x>=x1) and (x<=x1+w1))) and 
-                     (((y1>=y) and (y1<=y+h)) or ((y>=y1) and (y<=y1+h1)))) or 
-                    ((((x1>=x3) and (x1<=x3+w3)) or ((x3>=x1) and (x3<=x1+w1))) and 
-                     (((y1>=y3) and (y1<=y3+h3)) or ((y3>=y1) and (y3<=y1+h1))))):
-                    block.overlap = True
-                    block.dx = xClick - x1
-                    block.dy = yClick - y1
-                    block.findConnected(blocksList, xClick, yClick)
-
     def moveTextbox(self):
         self.keyBox.x = self.x + 30 
         self.keyBox.y = self.y + 10
@@ -1092,23 +1021,6 @@ class IfArrowKeyPressedBlock(Block):
     def shrink(self,x,y):
         if self.growButton.wasClicked(x,y):
             self.h2 -= 20
-
-    def findConnected(self,blocksList,xClick=0,yClick=0): 
-    #uses recursion to figure out which blocks are connected
-        x, y, w, h = self.x, self.y, self.width, self.height
-        x3,y3, w3, h3 = self.x3, self.y3, self.w3, self.h3
-        for block in blocksList:
-            if not block.overlap:
-                x1, y1 = block.x, block.y
-                w1, h1 = block.width, block.height
-                if (((((x1>=x) and (x1<=x+w)) or ((x>=x1) and (x<=x1+w1))) and 
-                     (((y1>=y) and (y1<=y+h)) or ((y>=y1) and (y<=y1+h1)))) or 
-                    ((((x1>=x3) and (x1<=x3+w3)) or ((x3>=x1) and (x3<=x1+w1))) and 
-                     (((y1>=y3) and (y1<=y3+h3)) or ((y3>=y1) and (y3<=y1+h1))))):
-                    block.overlap = True
-                    block.dx = xClick - x1
-                    block.dy = yClick - y1
-                    block.findConnected(blocksList, xClick, yClick)
 
     def moveTextbox(self):
         self.keyBox.x = self.x + 30 
@@ -1285,10 +1197,10 @@ class VariableInstanceBlock(Block):
         
     def run(self,data):
         self.updateParams(data)
-        print("   setting",self.name, "to",self.value)
-        print("  ",type(self.name))
+        #print("   setting",self.name, "to",self.value)
+        #print("  ",type(self.name))
         for variable in data.runVariables:
-            print("    ",variable,self.name==variable)
+            #print("    ",variable,self.name==variable)
             if self.name == variable:
                 variable.value = self.value
         self.ran = True
@@ -1364,7 +1276,8 @@ class DisplayVariableBlock(Block):
 
     def run(self,data):
         self.updateParams(data)
-        self.variable.display = True
+        try:self.variable.display = True
+        except: pass
         count = DisplayVariableBlock.getYPos(data, self.variable)
         x = data.screenBounds[0] + 20
         y = data.screenBounds[1] + 30*count - 10
@@ -1547,23 +1460,6 @@ class LoopBlock(Block):
         self.currentLoop = 0
         self.ran = True
 
-    def findConnected(self,blocksList,xClick=0,yClick=0): 
-    #uses recursion to figure out which blocks are connected
-        x, y, w, h = self.x, self.y, self.width, self.height
-        x3,y3, w3, h3 = self.x3, self.y3, self.w3, self.h3
-        for block in blocksList:
-            if not block.overlap:
-                x1, y1 = block.x, block.y
-                w1, h1 = block.width, block.height
-                if (((((x1>=x) and (x1<=x+w)) or ((x>=x1) and (x<=x1+w1))) and 
-                     (((y1>=y) and (y1<=y+h)) or ((y>=y1) and (y<=y1+h1)))) or 
-                    ((((x1>=x3) and (x1<=x3+w3)) or ((x3>=x1) and (x3<=x1+w1))) and 
-                     (((y1>=y3) and (y1<=y3+h3)) or ((y3>=y1) and (y3<=y1+h1))))):
-                    block.overlap = True
-                    block.dx = xClick - x1
-                    block.dy = yClick - y1
-                    block.findConnected(blocksList, xClick, yClick)
-
     def moveTextbox(self):
         self.selectLoopsBox.x = self.x + 50
         self.selectLoopsBox.y = self.y + self.margin
@@ -1628,7 +1524,8 @@ class WhileLoopBlock(Block):
         self.result = None
         self.currentLoop = 0
         self.selectVariableBox = DropBox(self.x+50, self.y+self.margin,70,self.h1//2,variables,"Select")
-        self.selectResultBox = TextBox(self.x+150,self.y+self.margin,70,self.h1//2,"Condition")
+        o = ["True","False"]
+        self.selectResultBox = DropBox(self.x+150,self.y+self.margin,70,self.h1//2,o,"Condition")
         self.textboxes = [self.selectVariableBox, self.selectResultBox]
         self.growButton = MyButton(self.x+65,self.y+85,10,10,"mediumorchid4","grow")
 
@@ -1680,23 +1577,6 @@ class WhileLoopBlock(Block):
         self.currentLoop = 0
         self.ran = True
 
-    def findConnected(self,blocksList,xClick=0,yClick=0): 
-    #uses recursion to figure out which blocks are connected
-        x, y, w, h = self.x, self.y, self.width, self.height
-        x3,y3, w3, h3 = self.x3, self.y3, self.w3, self.h3
-        for block in blocksList:
-            if not block.overlap:
-                x1, y1 = block.x, block.y
-                w1, h1 = block.width, block.height
-                if (((((x1>=x) and (x1<=x+w)) or ((x>=x1) and (x<=x1+w1))) and 
-                     (((y1>=y) and (y1<=y+h)) or ((y>=y1) and (y<=y1+h1)))) or 
-                    ((((x1>=x3) and (x1<=x3+w3)) or ((x3>=x1) and (x3<=x1+w1))) and 
-                     (((y1>=y3) and (y1<=y3+h3)) or ((y3>=y1) and (y3<=y1+h1))))):
-                    block.overlap = True
-                    block.dx = xClick - x1
-                    block.dy = yClick - y1
-                    block.findConnected(blocksList, xClick, yClick)
-
     def moveTextbox(self):
         self.selectVariableBox.x = self.x + 50
         self.selectVariableBox.y = self.y + self.margin
@@ -1731,6 +1611,153 @@ class WhileLoopBlock(Block):
         x2,y2 = x1+10,y1+10
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_text(x1,y1,text="is", anchor=W)
+        x1,y1,x2,y2 = self.x2,self.y2,self.x2+self.w2,self.y2+self.h2
+        x1,y1,x2,y2 = Block.changeBounds(x1,y1,x2,y2,canvasBounds)
+        if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
+            canvas.create_rectangle(x1,y1,x2,y2,fill=c)
+        x1,y1,x2,y2 = self.x3,self.y3,self.x3+self.w3,self.y3+self.h3
+        x1,y1,x2,y2 = Block.changeBounds(x1,y1,x2,y2,canvasBounds)
+        if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
+            canvas.create_rectangle(x1,y1,x2,y2,fill=c)
+            if x2 < canvasBounds[2]-15 and y1 > canvasBounds[1]-15 and x2 > canvasBounds[0] + 15:
+                self.growButton.draw(canvas)
+        for textbox in self.textboxes:
+            if textbox.isInBounds(canvasBounds):
+                textbox.draw(canvas)
+
+####################################
+# While Math Loop Block Class
+####################################
+
+class WhileMathLoopBlock(Block):
+
+    def __init__(self,x,y,variables):
+        self.w1 = 240
+        self.h1 = 40
+        self.margin = 10
+        self.v = variables
+        super().__init__(x,y,self.w1,self.h1)
+        self.color = "mediumorchid2"
+        self.x2 = self.x
+        self.y2 = self.y + self.h1
+        self.w2 = 20
+        self.h2 = 40
+        self.x3 = self.x
+        self.y3 = self.y2 + self.h2
+        self.w3 = 80
+        self.h3 = 20
+        self.name = None
+        self.variableBlock = None
+        self.currentLoop = 0
+        self.loops = 0
+        self.operator = None
+        self.number = 0
+        self.variableBox = DropBox(self.x+50, self.y+self.margin,70,self.h1//2,variables,"Variables")
+        options = ["=","<",">",">=","<="]
+        self.mathBox = DropBox(self.x+130, self.y+self.margin,30,self.h1//2,options,"=")
+        self.numberBox = TextBox(self.x+170,self.y+self.margin,60,self.h1//2,"Number")
+        self.textboxes = [self.variableBox,self.mathBox,self.numberBox]
+        self.growButton = MyButton(self.x+65,self.y+85,10,10,"mediumorchid4","grow")
+
+    def copy(self):
+        x = self.x
+        y = self.y
+        v = self.v
+        copy = WhileMathLoopBlock(x,y,v)
+        copy.color = self.color
+        copy.x2 = self.x2
+        copy.y2 = self.y2
+        copy.w2 = self.w2
+        copy.h2 = self.h2
+        copy.x3 = self.x3
+        copy.y3 = self.y3
+        copy.w3 = self.w3
+        copy.h3 = self.h3
+        copy.variableBlock = self.variableBlock
+        copy.operator = self.operator
+        copy.number = self.number
+        copy.variableBox = self.variableBox
+        copy.mathBox = self.mathBox
+        copy.numberBox = self.numberBox
+        copy.textboxes = self.textboxes
+        copy.growButton = self.growButton
+        copy.currentLoop = self.currentLoop
+        copy.loops = self.loops
+        copy.posTag = self.posTag
+        copy.endTag = self.endTag
+        return copy
+
+    def selectIndividual(self,x,y):
+    #sets up a clicked block to be moved
+        x1, y1, w1, h1 = self.x, self.y, self.width, self.height
+        x2, y2, w2, h2 = self.x2, self.y2, self.w2, self.h2
+        x3, y3, w3, h3 = self.x3, self.y3, self.w3, self.h3
+        if (((x1<=x<=x1+w1) and (y1<=y<=y1+h1)) or 
+            ((x2<=x<=x2+w2) and (y2<=y<=y2+h2)) or
+            ((x3<=x<=x3+w3) and (y3<=y<=y3+h3))):
+            self.dx = x - x1
+            self.dy = y - y1
+            self.drag = True
+            self.overlap = False
+            self.front = True
+
+    def grow(self,x,y):
+        if self.growButton.wasClicked(x,y):
+            self.h2 += 20
+
+    def shrink(self,x,y):
+        if self.growButton.wasClicked(x,y):
+            self.h2 -= 20
+
+    def run(self,data):
+        self.currentLoop = 0
+        self.ran = True
+
+    def moveTextbox(self):
+        self.variableBox.x = self.x + 50
+        self.variableBox.y = self.y + self.margin
+        self.mathBox.x = self.x + 130
+        self.mathBox.y = self.y + self.margin
+        self.numberBox.x = self.x + 170
+        self.numberBox.y = self.y + self.margin
+        self.x2 = self.x
+        self.y2 = self.y + self.h1
+        self.x3 = self.x
+        self.y3 = self.y2 + self.h2
+        self.growButton.x = self.x+65
+        self.growButton.y = self.y+self.h1+self.h2+5
+
+    def updateParams(self,data):
+    #updates the objects properties based on the blocks parameters
+        self.name = self.variableBox.text
+        try: self.number = int(self.numberBox.text)
+        except: pass
+        self.operator = self.mathBox.text
+
+    def evaluate(self,variables):
+        self.ran = True
+        for var in variables:
+            if var.name == self.name.name:
+                self.variableBlock = var
+                try: self.variableBlock.value = int(self.variableBlock.value)
+                except: pass
+        if self.operator == "=":
+            return self.variableBlock.value == self.number
+        elif self.operator == "<":
+            return self.variableBlock.value < self.number
+        elif self.operator == "<=":
+            return self.variableBlock.value <= self.number
+        elif self.operator == ">":
+            return self.variableBlock.value > self.number
+        elif self.operator == ">=":
+            return self.variableBlock.value >= self.number
+
+    def draw(self,canvas,canvasBounds,trashcan):
+        c = super().draw(canvas,canvasBounds,trashcan)
+        x1,y1 = self.x+self.margin, self.y+self.height//2
+        x2,y2 = x1+30,y1+10
+        if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
+            canvas.create_text(x1,y1, text = "While", anchor=W)
         x1,y1,x2,y2 = self.x2,self.y2,self.x2+self.w2,self.y2+self.h2
         x1,y1,x2,y2 = Block.changeBounds(x1,y1,x2,y2,canvasBounds)
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
@@ -1809,23 +1836,6 @@ class ForeverLoopBlock(Block):
     def run(self,data):
         self.currentLoop = 0
         self.ran = True
-
-    def findConnected(self,blocksList,xClick=0,yClick=0): 
-    #uses recursion to figure out which blocks are connected
-        x, y, w, h = self.x, self.y, self.width, self.height
-        x3,y3, w3, h3 = self.x3, self.y3, self.w3, self.h3
-        for block in blocksList:
-            if not block.overlap:
-                x1, y1 = block.x, block.y
-                w1, h1 = block.width, block.height
-                if (((((x1>=x) and (x1<=x+w)) or ((x>=x1) and (x<=x1+w1))) and 
-                     (((y1>=y) and (y1<=y+h)) or ((y>=y1) and (y<=y1+h1)))) or 
-                    ((((x1>=x3) and (x1<=x3+w3)) or ((x3>=x1) and (x3<=x1+w1))) and 
-                     (((y1>=y3) and (y1<=y3+h3)) or ((y3>=y1) and (y3<=y1+h1))))):
-                    block.overlap = True
-                    block.dx = xClick - x1
-                    block.dy = yClick - y1
-                    block.findConnected(blocksList, xClick, yClick)
 
     def moveTextbox(self):
         self.x2 = self.x
@@ -2267,6 +2277,69 @@ class MoveBlock(Block):
             canvas.create_text(x1,y1,text = "pixels", anchor=W)
 
 ####################################
+# Game Over Block Class
+####################################
+
+class GameOverBlock(Block):
+
+    def __init__(self,x,y):
+        self.width = 80
+        self.height = 40
+        self.margin = 10
+        super().__init__(x,y,self.width,self.height)
+        self.color = "mediumpurple3"
+
+    def copy(self):
+        x = self.x
+        y = self.y
+        copy = GameOverBlock(x,y)
+        return copy
+
+    def run(self, data):
+        self.ran = True 
+        data.isRunning = False
+
+    def draw(self,canvas,canvasBounds,trashcan):
+        super().draw(canvas,canvasBounds,trashcan)
+        x1,y1 = self.x+10, self.y+self.height//2
+        x2,y2 = x1+30,y1+10
+        if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
+            canvas.create_text(x1,y1, text = "Game Over", anchor=W)
+
+####################################
+# Comment Block Class
+####################################
+
+class CommentBlock(Block):
+
+    def __init__(self,x,y):
+        self.width = 300
+        self.height = 40
+        self.margin = 10
+        super().__init__(x,y,self.width,self.height)
+        self.color = "wheat2"
+        self.commentBox = TextBox(self.x+10, self.y+self.margin,280,self.height//2,"Type Here")
+        self.textboxes = [self.commentBox]
+
+    def copy(self):
+        x = self.x
+        y = self.y
+        copy = CommentBlock(x,y)
+        copy.commentBox = self.commentBox
+        return copy
+
+    def moveTextbox(self):
+    #adjusts the textboxes to move with the block 
+        self.commentBox.x = self.x + 10
+        self.commentBox.y = self.y + self.margin
+
+    def draw(self,canvas,canvasBounds,trashcan):
+        super().draw(canvas,canvasBounds,trashcan)
+        for textbox in self.textboxes:
+            if textbox.isInBounds(canvasBounds):
+                textbox.draw(canvas)
+
+####################################
 # Jump Block Class
 ####################################
 
@@ -2400,6 +2473,9 @@ class BlockButton(MyButton):
             elif self.type == "bounce": block = BounceBlock(x1,y1,data.figures)
             elif self.type == "arrowPressed": block = IfArrowKeyPressedBlock(x1,y1)
             elif self.type == "ifmath": block = IfMathBlock(x1,y1,data.variables)
+            elif self.type == "gameover": block = GameOverBlock(x1,y1)
+            elif self.type == "comment": block = CommentBlock(x1,y1)
+            elif self.type == "whilemath": block = WhileMathLoopBlock(x1,y1,data.variables)
             elif self.type == "variable": 
                 block = VariableBlock(x1,y1)
                 data.variables.append(block)

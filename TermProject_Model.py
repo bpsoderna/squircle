@@ -3,19 +3,22 @@ from class_block import *
 from class_trashcan import *
 
 def init(data):
-    data.codeWidth = data.width//2
-    data.margin = 10
+    initRandomStart(data)
     initHorizontalSB(data)
     initVerticalSB(data)
     initCanvasAndBlocks(data)
     initUIButtons(data)
     initScrollButtons(data)
-    snapToGrid(data)
-    data.figureCopies = []
+    
+def initRandomStart(data):
+    data.codeWidth = data.width//2
     data.resize = False
+    data.margin = 10
     data.key = None 
     data.xClick = 0
     data.yClick = 0
+    data.tutorialIndex=1
+    data.maxTutorialIndex = 16
 
 def initHorizontalSB(data):
     data.sbHeight = 60
@@ -26,6 +29,7 @@ def initHorizontalSB(data):
     data.d_hScroll = 0
     initHorizontalButtons(data)
     data.blocks = []
+    snapToGrid(data)
     data.runVariables = []
     data.variables = []
     data.newBlock = False
@@ -57,8 +61,9 @@ def initScrollButtons(data):
 
 def initHorizontalButtons(data):
     h = data.sbHeight - 2*data.margin
-    w = h + 12
-    c0,c1,c2,c3 = ("indianred1","gold","turquoise1","mediumorchid2")
+    w = h + 15
+    c0,c1,c2,c3,c4,c5 = ("indianred1","gold","turquoise1","mediumorchid2",
+                         "mediumpurple3","wheat2")
     howTo = MyButton(0,0,w,h,"powderblue","help","HELP")
     b0 = BlockButton(0,0,w,h,c0,"if", "if")
     b1 = BlockButton(0,0,w,h,c0,"keypressed"," key\npress")
@@ -77,11 +82,16 @@ def initHorizontalButtons(data):
     #b13 = BlockButton(0,0,w,h,c2,"bounce","bounce")
     b14 = BlockButton(0,0,w,h,c3,"loop","loop")
     b15 = BlockButton(0,0,w,h,c3,"while","while\n loop")
-    b16 = BlockButton(0,0,w,h,c3,"forever","forever\n  loop")
-    data.horizontalButtons = [howTo,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12,b14,b15,b16]
+    b16 = BlockButton(0,0,w,h,c3,"whilemath","while\n math")
+    b17 = BlockButton(0,0,w,h,c3,"forever","forever\n  loop")
+    b18 = BlockButton(0,0,w,h,c4,"gameover","game\n over")
+    b19 = BlockButton(0,0,w,h,c5,"comment","comment")
+    data.horizontalButtons = [howTo,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12,
+                              b14,b15,b16,b17,b18,b19]
     addHorizontalButtonLocs(data)
     data.minHStart = data.sbShift
-    data.maxHStop = min(data.codeWidth, data.codeWidth - ((len(data.horizontalButtons)+1)*data.margin + buttonWidthSum(data)))
+    buttonMax = (len(data.horizontalButtons)+1)*data.margin + buttonWidthSum(data)
+    data.maxHStop = min(data.codeWidth+5, (data.codeWidth-buttonMax-5))
 
 def initVerticalSB(data):
     data.sbHeight = 60
@@ -123,6 +133,7 @@ def initVerticalButtons(data):
     addVerticalButtonLocs(data)
     data.minVStart = data.sbShift
     data.maxVStop = data.height - ((len(data.verticalButtons)+1)*data.margin + buttonHeightSum(data))
+    data.figureCopies = []
 
 def initCanvasAndBlocks(data):
     #canvas vars 
@@ -214,19 +225,6 @@ def updateButtonLocs(data):
     for button in data.horizontalButtons:
         button.x += data.d_hScroll
     data.d_hScroll = 0
-
-def deleteUnusedBlocks(event,data): 
-#deletes blocks not dragged onto canvas
-    for button in data.horizontalButtons:
-        if button.wasClicked(event.x,event.y) and abs(data.xClick-event.x) < 30 and abs(data.yClick-event.y) < 30:
-            if len(data.blocks) > 1:
-                data.blocks.pop()
-
-def deleteUnusedfigures(event,data): 
-#deletes figures not dragged onto canvas
-    for button in data.verticalButtons:
-        if button.wasClicked(event.x,event.y) and abs(data.xClick-event.x) < 30 and abs(data.yClick-event.y) < 30:
-            data.figures.pop()
 
 def snapToGrid(data): 
 #snaps the blocks to a 10 pixel grid
