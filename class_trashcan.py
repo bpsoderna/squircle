@@ -6,10 +6,10 @@ class Trashcan(object):
 
     def __init__(self,size,margin,canvasBounds):
         X1,Y1,X2,Y2 = canvasBounds
-        self.x1 = X2-2*margin-size
-        self.y1 = Y1+2*margin
-        self.x2 = X2-2*margin
-        self.y2 = Y1+2*margin+size
+        self.x1 = X2-margin-size
+        self.y1 = Y1+margin
+        self.x2 = X2-margin
+        self.y2 = Y1+margin+size
 
     def draw(self,canvas):
         x1 = self.x1

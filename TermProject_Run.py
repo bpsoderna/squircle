@@ -5,12 +5,13 @@ from class_figure import *
 from class_errorbox import *
 from class_trashcan import *
 from class_textbox import *
-from class_button import *
+from class_variableInstance import *
 
 from TermProject_Model import *
 from TermProject_Control import *
 from TermProject_View import *
 
+#taken from the 15-122 course notes then edited
 def run(width=300, height=300):
     def redrawAllWrapper(canvas, data):
         canvas.delete(ALL)
@@ -42,7 +43,7 @@ def run(width=300, height=300):
         redrawAllWrapper(canvas,data)
 
     def keyPressedWrapper(event, canvas, data):
-        keyPressed(event, data)
+        keyPressed(event, canvas, data)
         redrawAllWrapper(canvas, data)
 
     def timerFiredWrapper(canvas, data):
@@ -50,11 +51,11 @@ def run(width=300, height=300):
         redrawAllWrapper(canvas, data)
         # pause, then call timerFired again
         canvas.after(data.timerDelay, timerFiredWrapper, canvas, data)
+
     # Set up data and call init
     class Struct(object): pass
     data = Struct()
     data.width = width
-    data.codeWidth = data.width//2
     data.height = height
     data.timerDelay = 100 # milliseconds
     init(data)
@@ -63,6 +64,7 @@ def run(width=300, height=300):
     canvas = Canvas(root, width=data.width, height=data.height)
     canvas.pack()
     # set up events
+    timerFiredWrapper(canvas, data)
     root.bind("<Button-1>", lambda event: leftMousePressedWrapper(event, canvas, data))
     root.bind("<Button-3>", lambda event: rightMousePressedWrapper(event, canvas, data))
     root.bind("<Key>", lambda event: keyPressedWrapper(event, canvas, data))
@@ -70,9 +72,7 @@ def run(width=300, height=300):
     root.bind("<B1-Motion>", lambda event: leftMouseMovedWrapper(event, canvas, data))
     root.bind("<B3-Motion>", lambda event: rightMouseMovedWrapper(event, canvas, data))
     root.bind("<B3-ButtonRelease>", lambda event: rightMouseReleasedWrapper(event,canvas,data))
-    timerFiredWrapper(canvas, data)
     # and launch the app
     root.mainloop()  # blocks until window is closed
-    print("bye!")
 
-run(1200,600)
+run(1500,800)

@@ -17,6 +17,12 @@ def typeCharacter(s,keysym):
         s += "_"
     elif keysym == "Shift_R" or keysym == "Shift_L":
         pass
+    elif keysym == "Return":
+        s = keysym
+    elif keysym == "minus":
+        s += "-"
+    elif keysym == "space":
+        s += ""
     else:
         s = None
     return s 
@@ -41,7 +47,7 @@ class TextBox(object):
         self.allowChange = False
 
     def __repr__(self):
-        return str(self.text) + "   " + self.defaultText
+        return str(self.text) + "   " + str(self.defaultText)
 
     def clicked(self,x,y):
     #returns true if a textBox was clicked
@@ -55,11 +61,22 @@ class TextBox(object):
     #allows the user to type using keyboard if theres not an error
         if typeCharacter(self.text,keysym) == None:
             self.typeError = True
+        if typeCharacter(self.text,keysym) == "Return":
+            self.allowChange = False
         else:
             self.text = typeCharacter(self.text,keysym)
 
+    def isInBounds(self,canvasBounds): 
+    #determines if the textbox has left the canvas
+        x1, y1  = self.x, self.y
+        x2 = x1 + self.width
+        y2 = y1 + self.height
+        w1, h1, w2, h2 = canvasBounds
+        return x1>w1 and x2<w2 and y1>h1 and y2<h2
+
     def draw(self,canvas):
-        border = 3 if self.wasClicked else self.border
+        canvas.tag_raise(self)
+        border = 3 if self.allowChange else self.border
         canvas.create_rectangle(self.x, self.y, self.x+self.width, self.y+self.height, width=border,fill="white")
         if self.typeError:
             self.typeErrorBox.draw(canvas)
@@ -109,3 +126,31 @@ class DropBox(TextBox):
         if self.wasClicked:
             self.drawOptions(canvas)
         super().draw(canvas)
+
+    def type(self,keysym): pass
+
+#####################################
+# Holder Class
+#####################################
+
+class HolderBox(TextBox):
+
+    def __init__(self,x,y,w,h,text="Variable"):
+        super().__init__(x,y,w,h,text)
+        self.color = "white"
+
+    def fill(self,varInstance):
+        if varInstance != None:
+            self.color = varInstance.color
+            self.text = varInstance.name
+            return self.text
+
+    def type(self,keysym): pass
+
+    def draw(self,canvas):
+        canvas.tag_raise(self)
+        canvas.create_rectangle(self.x, self.y, self.x+self.width, self.y+self.height, width=self.border,fill=self.color)
+        if self.typeError:
+            self.typeErrorBox.draw(canvas)
+        else:
+            canvas.create_text(self.x+10,self.y+self.height//2,anchor=W,text=self.text)
