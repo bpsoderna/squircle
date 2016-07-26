@@ -1,8 +1,37 @@
 from tkinter import *
-from class_block import *
-from class_trashcan import *
 from TermProject_Model import *
 import pickle
+
+from class_block import *
+from class_complexBlock import *
+from class_bounceBlock import *
+from class_bounceRandomBlock import *
+from class_changeVariableBlock import *
+from class_commentBlock import *
+from class_displayVariableBlock import *
+from class_edgeBounceBlock import *
+from class_foreverLoopBlock import *
+from class_gameOverBlock import *
+from class_ifArrowKeyPressedBlock import *
+from class_ifBlock import *
+from class_ifKeyPressedBlock import *
+from class_ifMathBlock import *
+from class_ifTouchingBlock import *
+from class_jumpBlock import *
+from class_loopBlock import *
+from class_moveBlock import *
+from class_moveTowardsBlock import *
+from class_variableBlock import *
+from class_variableInstanceBlock import *
+from class_whileLoopBlock import *
+from class_whileMathLoopBlock import *
+
+from class_myButton import *
+from class_figureButton import *
+from class_blockButton import *
+
+from class_figure import *
+from class_trashcan import *
 
 def rightMousePressed(event, data):
 #add blocks/figures, move individually clicked blocks/figures, resize canvas
@@ -187,7 +216,7 @@ def UIButtonsClicked(event,data):
         data.displayScreen = True
     #Save
     if data.UIButtons[1].wasClicked(event.x,event.y):
-        everything = [data.blocks, data.figures, data.variables]
+        everything= [data.blocks, data.figures, data.variables]
         saveContent = pickle.dumps(everything)
         writeFile("saved.txt",saveContent)
     #Load
@@ -414,14 +443,16 @@ def isInRange(value, start, end):
 def runQueue(data):
 #runs the queue, called each time the timer is fired
     i = 0                                                                       #HELPFUL DEBUGGING PRINTS:
-    while i < len(data.queue):                                                  #print(i, block, block.ran)
+    while i < len(data.queue):                                                  
+        #print(i, data.queue[i], data.queue[i].ran) 
         block = data.queue[i]                                                   #if type(block) == MoveBlock: print("   ("+str(block.figure.x)+","+str(block.figure.y)+")",block.target, block.direction)                         
         if not block.ran: 
             if type(block) in {MoveBlock, MoveTowardsBlock, BounceBlock, BounceRandomBlock, 
                                EdgeBounceBlock, VariableBlock, VariableInstanceBlock, 
                                DisplayVariableBlock, ForeverLoopBlock,GameOverBlock}:
                 block.run(data)
-                i += 1                                                          #print()
+                i += 1                                                          
+                #print()
                 return
             elif type(block) == ChangeVariableBlock:
                 block.run(data)

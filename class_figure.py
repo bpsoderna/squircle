@@ -1,6 +1,5 @@
-from class_figure import *
-from class_block import *
-
+from tkinter import *
+from class_textbox import *
 
 ####################################
 # Figure Class
@@ -31,6 +30,8 @@ class Figure(object):
         self.direction = None
         self.checkEdge = False
         self.var = variable
+        self.rx = 0
+        self.ry = 0
 
     #####################
     # Figure Methods

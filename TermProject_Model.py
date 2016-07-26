@@ -1,5 +1,11 @@
 from tkinter import *
+
 from class_block import *
+
+from class_myButton import *
+from class_figureButton import *
+from class_blockButton import *
+
 from class_trashcan import *
 
 def init(data):
@@ -79,7 +85,7 @@ def initHorizontalButtons(data):
     b10 = BlockButton(0,0,w,h,c2,"movetowards","  move\ntowards")
     b11 = BlockButton(0,0,w,h,c2,"edgeBounce","  edge\nbounce")
     b12 = BlockButton(0,0,w,h,c2,"bounceRandom","   move\nrandomly")
-    #b13 = BlockButton(0,0,w,h,c2,"bounce","bounce")
+    b13 = BlockButton(0,0,w,h,c2,"bounce","bounce")
     b14 = BlockButton(0,0,w,h,c3,"loop","loop")
     b15 = BlockButton(0,0,w,h,c3,"while","while\n loop")
     b16 = BlockButton(0,0,w,h,c3,"whilemath","while\n math")
@@ -87,7 +93,7 @@ def initHorizontalButtons(data):
     b18 = BlockButton(0,0,w,h,c4,"gameover","game\n over")
     b19 = BlockButton(0,0,w,h,c5,"comment","comment")
     data.horizontalButtons = [howTo,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12,
-                              b14,b15,b16,b17,b18,b19]
+                              b13,b14,b15,b16,b17,b18,b19]
     addHorizontalButtonLocs(data)
     data.minHStart = data.sbShift
     buttonMax = (len(data.horizontalButtons)+1)*data.margin + buttonWidthSum(data)

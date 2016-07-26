@@ -1,11 +1,5 @@
 from tkinter import *
 
-from class_block import *
-from class_figure import *
-from class_errorbox import *
-from class_trashcan import *
-from class_textbox import *
-
 from TermProject_Model import *
 from TermProject_Control import *
 from TermProject_View import *
@@ -15,7 +9,7 @@ def run(width=300, height=300):
     def redrawAllWrapper(canvas, data):
         canvas.delete(ALL)
         redrawAll(canvas, data)
-        canvas.update()    
+        canvas.update()
 
     def leftMousePressedWrapper(event,canvas,data):
         leftMousePressed(event,data)
