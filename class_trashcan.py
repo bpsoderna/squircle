@@ -17,3 +17,6 @@ class Trashcan(object):
         x2 = self.x2
         y2 = self.y2
         canvas.create_rectangle(x1,y1,x2,y2,fill="gray")
+        x = (x1+x2)//2
+        y = (y1+y2)//2
+        canvas.create_text(x,y,text="TRASH")

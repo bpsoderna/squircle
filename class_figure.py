@@ -260,7 +260,7 @@ class Figure(object):
     def drawPropertyBox(self, canvas):
         if self.displayPropertyBox:
             x1,y1,x2,y2 = self.propertyBoxBounds
-            canvas.create_rectangle(x1,y1,x2,y2,fill="thistle3")
+            canvas.create_rectangle(x1,y1,x2,y2,fill="powderblue")
             self.drawProperties(canvas)
 
     def drawProperties(self, canvas):

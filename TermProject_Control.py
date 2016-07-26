@@ -5,6 +5,7 @@ from TermProject_Model import *
 import pickle
 
 def rightMousePressed(event, data):
+    data.xClick, data.yClick = event.x, event.y
     if not data.isRunning:
         resetBlocks(data)
         clickedButton(event,data)
@@ -19,21 +20,27 @@ def rightMousePressed(event, data):
             data.resize = True
 
 def leftMousePressed(event,data):
-    if not data.isRunning:
-        clickedButton(event,data)
-        connectBlocks(event,data)
-        figuresAndBlocks(event,data)
-        UIButtonsClicked(event,data)
-        if event.x-5<=data.codeWidth<=event.x+5:
-            data.resize = True
-    if data.displayScreen:
-        if data.exitScreen.wasClicked(event.x,event.y):
-            data.displayScreen = False
-            data.isRunning = False
-            Figure.copyFigures(data)
-            for block in data.blocks:
-                block.updateParams(data)
-                block.reset(data.codetrashcan,data.blocks)
+    data.xClick, data.yClick = event.x, event.y
+    if data.displayHelpScreen:
+        if data.exitHelpScreen.wasClicked(event.x,event.y):
+            data.displayHelpScreen = False
+    else:
+        if not data.isRunning:
+            clickedButton(event,data)
+            connectBlocks(event,data)
+            figuresAndBlocks(event,data)
+            UIButtonsClicked(event,data)
+            scrollButtonsClicked(event,data)
+            if event.x-5<=data.codeWidth+5<=event.x+5:
+                data.resize = True
+        if data.displayScreen:
+            if data.exitScreen.wasClicked(event.x,event.y):
+                data.displayScreen = False
+                data.isRunning = False
+                Figure.copyFigures(data)
+                for block in data.blocks:
+                    block.updateParams(data)
+                    block.reset(data.codetrashcan,data.blocks,data.variables)
 
 def rightMouseMoved(event,data):
     if not data.displayScreen:
@@ -52,10 +59,10 @@ def rightMouseReleased(event, data):
         data.resize = False
         snapToGrid(data)
         resetBlocks(data)
-        deleteUnusedBlocks(data)
+        deleteUnusedBlocks(event,data)
         data.newBlock = False
         resetfigures(data)
-        deleteUnusedfigures(data)
+        deleteUnusedfigures(event,data)
         data.newfigure = False
 
 def leftMouseReleased(event,data):
@@ -63,10 +70,10 @@ def leftMouseReleased(event,data):
         data.resize = False
         resetBlocks(data)
         snapToGrid(data)
-        deleteUnusedBlocks(data)
+        deleteUnusedBlocks(event,data)
         data.newBlock = False
         resetfigures(data)
-        deleteUnusedfigures(data)
+        deleteUnusedfigures(event,data)
         data.newfigure = False
 
 def keyPressed(event, canvas, data):
@@ -91,6 +98,17 @@ def keyPressed(event, canvas, data):
                     for textbox in block.textboxes: textbox.wasClicked = False
                 block.updateParams(data)
  
+def controlClick(event,data):
+    pass
+    """
+    if not data.displayScreen and not data.displayHelpScreen:
+        makeCopy = False
+        print(data.blocks)
+        for block in data.blocks:
+            if block.wasClicked(event.x,event.y):
+                makeCopy = True
+        if makeCopy: data.blocks.append(block.copy())"""
+
 def timerFired(data):
     pass
 
@@ -109,8 +127,11 @@ def clickedButton(event, data):
 #if a button is clicked, add a block/figure
     for button in data.horizontalButtons:
         if button.wasClicked(event.x,event.y):
-            button.createBlock(data,event.x)
-            data.newBlock = True
+            if button.type == "help":
+                data.displayHelpScreen = True
+            else:
+                button.createBlock(data,event.x)
+                data.newBlock = True
     for button in data.verticalButtons:
         if button.wasClicked(event.x,event.y):
             button.createfigure(data.figures,data.propertyBoxBounds,data)
@@ -142,12 +163,13 @@ def figuresAndBlocks(event,data):
         if block.drag and block.type != "start" : 
             data.blocks.remove(block)
             data.blocks.append(block)
-            #return
 
+#copied from course notes file IO and edited
 def readFile(path):
     with open(path,"rb") as f:
         return f.read()
 
+#copied from course notes file IO and edited
 def writeFile(path,contents):
     with open(path,"wb") as f:
         f.write(contents)
@@ -160,28 +182,49 @@ def UIButtonsClicked(event,data):
         Figure.copyFigures(data)
         for block in data.blocks:
             block.updateParams(data)
-            block.reset(data.codetrashcan,data.blocks)
+            block.reset(data.codetrashcan,data.blocks,data.variables)
         createQueue(data)
         data.isRunning = True
         data.displayScreen = True
     #Save
     if data.UIButtons[1].wasClicked(event.x,event.y):
-        everything = [data.blocks, data.figures]
+        everything = [data.blocks, data.figures, data.variables]
         saveContent = pickle.dumps(everything)
         writeFile("saved.txt",saveContent)
     #Load
     if data.UIButtons[2].wasClicked(event.x,event.y):
         contentsRead = readFile("saved.txt")
         everything = pickle.loads(contentsRead)
-        [data.blocks, data.figures] = everything
+        [data.blocks, data.figures, data.variables] = everything
     #Restart
     if data.UIButtons[3].wasClicked(event.x,event.y):
         init(data)
+        data.displayHelpScreen = False
     #Chase Game
     if data.UIButtons[4].wasClicked(event.x,event.y):
         contentsRead = readFile("chasegame.txt")
         everything = pickle.loads(contentsRead)
-        [data.blocks, data.figures] = everything
+        [data.blocks, data.figures, data.variables] = everything
+
+def scrollButtonsClicked(event,data):
+    for button in data.scrollButtons:
+        if button.wasClicked(event.x,event.y):
+            if button.title == "v":
+                for block in data.blocks:
+                    block.y -= 10
+                    block.moveTextbox()
+            elif button.title == ">":
+                for block in data.blocks:
+                    block.x -= 10
+                    block.moveTextbox()
+            elif button.title == "<":
+                for block in data.blocks:
+                    block.x += 10
+                    block.moveTextbox()
+            elif button.title == "^":
+                for block in data.blocks:
+                    block.y += 10
+                    block.moveTextbox()
 
 def scroll(data,keysym):
 #scrolls vertical and horizontal scrollbar based on arrow keys
@@ -235,7 +278,8 @@ def addBlocksToQueue(blocks, variables, queue, minY=None, maxY=None):
                        BounceRandomBlock, EdgeBounceBlock}:
         queue.append(copy)
     elif type(block) in {LoopBlock, IfBlock, WhileLoopBlock, ForeverLoopBlock,
-                         IfKeyPressedBlock, IfTouchingBlock, IfArrowKeyPressedBlock}:
+                         IfKeyPressedBlock, IfTouchingBlock, IfArrowKeyPressedBlock,
+                         IfMathBlock}:
         queue.append(copy)
         copy.posTag = len(queue)-1
         loopQueue(block,queue,blocks,variables)
@@ -293,7 +337,7 @@ def runQueue(data):
                 if block.currentLoop > block.loops: 
                     i = block.endTag+2                         #print("END:", i, len(data.queue))
                 else: i += 1
-            elif type(block) in {IfBlock, IfTouchingBlock}:    #print("   loop:",block.currentLoop,"of",block.loops)
+            elif type(block) in {IfBlock, IfTouchingBlock, IfMathBlock}:    #print("   loop:",block.currentLoop,"of",block.loops)
                 if (block.currentLoop >= block.loops or 
                     not block.evaluate(data.runVariables)):
                     i = block.endTag+2
@@ -340,13 +384,15 @@ def moveFigures(event,data):
         figure.panScreen(event,data.canvasBounds,clickedfigure,data.newfigure,copy,dx,dy)
 
 def resizeCanvas(event,data):
-     if data.resize:
-        if 145 < event.x < data.width-323:
+    if data.resize:
+        buttons = buttonWidthSum(data) + data.margin*((len(data.horizontalButtons))+2)
+        stop = min(buttons,data.width-323)
+        if 148 < event.x < stop:
             data.codeWidth = event.x
             updateBounds(data)
 
 def updateBounds(data):
-    data.maxHStop = data.codeWidth - ((len(data.horizontalButtons)+1)*data.margin + buttonWidthSum(data))
+    data.maxHStop = min(data.codeWidth, data.codeWidth - ((len(data.horizontalButtons)+1)*data.margin + buttonWidthSum(data)))
     data.sbX = data.codeWidth + data.margin
     data.sbX2 = data.sbX + data.sbHeight
     canvasTop1 = data.sbY2 + data.margin
@@ -357,6 +403,9 @@ def updateBounds(data):
     tcw = 50
     data.codetrashcan = Trashcan(tcw, data.margin, data.codeCanvasBounds)
     data.canvasTrashcan = Trashcan(tcw, data.margin, data.canvasBounds)
-    addVerticalButtonLocs(data)
+    addVerticalButtonLocs(data,True)
     for button in data.UIButtons:
         button.x = data.codeWidth + 2*data.margin + data.sbHeight
+    for figure in data.figureCopies:
+        if figure.color == "gold":
+            figure.x = data.canvasBounds[0] - data.screenBounds[0] + 20

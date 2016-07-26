@@ -30,12 +30,18 @@ class Block(object):
         self.rx = 0 
         self.ry = 0
         self.text = text
+        self.display = False
 
-    def reset(self,trashcan,blocks):
+    def reset(self,trashcan,blocks,variables=None):
     #'deselects' and 'unconnects' blocks and deletes ones in trashcan
         self.drag, self.overlap = False, False
         if self.isInTrashcan(trashcan) and self.type != "start":
             blocks.remove(self)
+
+    def wasClicked(self,x,y):
+    #returns True if the figure was clicked
+        return (self.x < x < self.x + self.width and 
+                self.y < y < self.y + self.height)
 
     def blockInBounds(self,canvasBounds): 
     #determines if the block has left the canvas
@@ -108,6 +114,7 @@ class Block(object):
         copy.textboxes = self.textboxes
         copy.inQueue = self.inQueue
         copy.ran = self.ran
+        copy.display = self.display
         return copy
 
     #overridden methods
@@ -122,7 +129,15 @@ class Block(object):
     @staticmethod
     def isInBounds(x1,y1,x2,y2,canvasBounds):
         w1, h1, w2, h2 = canvasBounds
-        return x1>w1 and x2<w2 and y1>h1 and y2<h2
+        return x1>=w1 and x2<=w2 and y1>=h1 and y2<=h2
+
+    @staticmethod
+    def changeBounds(x1,y1,x2,y2,canvasBounds):
+        if y1 < canvasBounds[1] and y2 > canvasBounds[1]: y1 = canvasBounds[1]
+        if y2 > canvasBounds[3] and y1 < canvasBounds[3]: y2 = canvasBounds[3]
+        if x1 < canvasBounds[0] and x2 > canvasBounds[0]: x1 = canvasBounds[0]
+        if x2 > canvasBounds[2] and x1 < canvasBounds[2]: x2 = canvasBounds[2]
+        return x1,y1,x2,y2
 
     #######################
     # Block Motion
@@ -348,11 +363,11 @@ class IfBlock(Block):
 
     def evaluate(self,variables):
         self.ran = True
-        #print("   evaluating...",end="")
+        print("   evaluating...",end="")
         for var in variables:
             if var.name == self.name.name:
                 self.variableBlock = var
-        #print(self.variableBlock.value, "?=", self.result, ":", self.variableBlock.value == self.result)
+        print(self.variableBlock.value, "?=", self.result, ":", self.variableBlock.value == self.result)
         return self.variableBlock.value == self.result
 
     def draw(self,canvas,canvasBounds,trashcan):
@@ -365,13 +380,183 @@ class IfBlock(Block):
         x2,y2 = x1+10,y1+10
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_text(x1,y1,text="is", anchor=W)
+        #left bar
         x1,y1,x2,y2 = self.x2,self.y2,self.x2+self.w2,self.y2+self.h2
+        x1,y1,x2,y2 = Block.changeBounds(x1,y1,x2,y2,canvasBounds)
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_rectangle(x1,y1,x2,y2,fill=c)
+        #bottom bar
         x1,y1,x2,y2 = self.x3,self.y3,self.x3+self.w3,self.y3+self.h3
+        x1,y1,x2,y2 = Block.changeBounds(x1,y1,x2,y2,canvasBounds)
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_rectangle(x1,y1,x2,y2,fill=c)
-            self.growButton.draw(canvas)
+            if x2 < canvasBounds[2]-15 and y1 > canvasBounds[1]-15 and x2 > canvasBounds[0] + 15:
+                self.growButton.draw(canvas)
+        for textbox in self.textboxes:
+            if textbox.isInBounds(canvasBounds):
+                textbox.draw(canvas)
+
+####################################
+# If Block Class
+####################################
+
+class IfMathBlock(Block):
+
+    def __init__(self,x,y,variables):
+        self.variables = variables
+        self.w1 = 220
+        self.h1 = 40
+        self.margin = 10
+        super().__init__(x,y,self.w1,self.h1)
+        self.color = "indianred1"
+        self.x2 = self.x
+        self.y2 = self.y + self.h1
+        self.w2 = 20
+        self.h2 = 40
+        self.x3 = self.x
+        self.y3 = self.y2 + self.h2
+        self.w3 = 80
+        self.h3 = 20
+        self.growButton = MyButton(self.x+65,self.y+85,10,10,"indianred4","grow")
+        self.name = None
+        self.variableBlock = None
+        self.currentLoop = 0
+        self.loops = 1
+        self.operator = None
+        self.number = 0
+        self.variableBox = DropBox(self.x+30, self.y+self.margin,70,self.h1//2,variables,"Variables")
+        options = ["=","<",">",">=","<="]
+        self.mathBox = DropBox(self.x+110, self.y+self.margin,30,self.h1//2,options,"=")
+        self.numberBox = TextBox(self.x+150,self.y+self.margin,60,self.h1//2,"Number")
+        self.textboxes = [self.variableBox,self.mathBox,self.numberBox]
+
+    def copy(self):
+        x = self.x
+        y = self.y
+        v = self.variables
+        copy = IfMathBlock(x,y,v)
+        copy.color = self.color
+        copy.x2 = self.x2
+        copy.y2 = self.y2
+        copy.w2 = self.w2
+        copy.h2 = self.h2
+        copy.x3 = self.x3
+        copy.y3 = self.y3
+        copy.w3 = self.w3
+        copy.h3 = self.h3
+        copy.loops = self.loops
+        copy.name = self.name
+        copy.variableBlock = self.variableBlock
+        copy.operator = self.operator
+        copy.number = self.number
+        copy.variableBox = self.variableBox
+        copy.mathBox = self.mathBox
+        copy.numberBox = self.numberBox
+        copy.textboxes = self.textboxes
+        copy.growButton = self.growButton
+        copy.currentLoop = self.currentLoop
+        return copy
+
+    def grow(self,x,y):
+        if self.growButton.wasClicked(x,y):
+            self.h2 += 20
+
+    def shrink(self,x,y):
+        if self.growButton.wasClicked(x,y):
+            self.h2 -= 20
+
+    def selectIndividual(self,x,y):
+    #sets up a clicked block to be moved
+        x1, y1, w1, h1 = self.x, self.y, self.width, self.height
+        x2, y2, w2, h2 = self.x2, self.y2, self.w2, self.h2
+        x3, y3, w3, h3 = self.x3, self.y3, self.w3, self.h3
+        if (((x1<=x<=x1+w1) and (y1<=y<=y1+h1)) or 
+            ((x2<=x<=x2+w2) and (y2<=y<=y2+h2)) or
+            ((x3<=x<=x3+w3) and (y3<=y<=y3+h3))):
+            self.dx = x - x1
+            self.dy = y - y1
+            self.drag = True
+            self.overlap = False
+            self.front = True
+
+    def findConnected(self,blocksList,xClick=0,yClick=0): 
+    #uses recursion to figure out which blocks are connected
+        x, y, w, h = self.x, self.y, self.width, self.height
+        x3,y3, w3, h3 = self.x3, self.y3, self.w3, self.h3
+        for block in blocksList:
+            if not block.overlap:
+                x1, y1 = block.x, block.y
+                w1, h1 = block.width, block.height
+                if (((((x1>=x) and (x1<=x+w)) or ((x>=x1) and (x<=x1+w1))) and 
+                     (((y1>=y) and (y1<=y+h)) or ((y>=y1) and (y<=y1+h1)))) or 
+                    ((((x1>=x3) and (x1<=x3+w3)) or ((x3>=x1) and (x3<=x1+w1))) and 
+                     (((y1>=y3) and (y1<=y3+h3)) or ((y3>=y1) and (y3<=y1+h1))))):
+                    block.overlap = True
+                    block.dx = xClick - x1
+                    block.dy = yClick - y1
+                    block.findConnected(blocksList, xClick, yClick)
+
+    def moveTextbox(self):
+        self.variableBox.x = self.x + 30
+        self.variableBox.y = self.y + self.margin
+        self.mathBox.x = self.x + 110
+        self.mathBox.y = self.y + self.margin
+        self.numberBox.x = self.x + 150
+        self.numberBox.y = self.y + self.margin
+        self.x2 = self.x
+        self.y2 = self.y + self.h1
+        self.x3 = self.x
+        self.y3 = self.y2 + self.h2
+        self.growButton.x = self.x+65
+        self.growButton.y = self.y+self.h1+self.h2+5 
+
+    def updateParams(self,data):
+        self.name = self.variableBox.text
+        try: self.number = int(self.numberBox.text)
+        except: pass
+        self.operator = self.mathBox.text
+
+    def evaluate(self,variables):
+        self.ran = True
+        for var in variables:
+            if var.name == self.name.name:
+                self.variableBlock = var
+                try: self.variableBlock.value = int(self.variableBlock.value)
+                except: pass
+        #print(self.variableBlock.value, self.operator, self.number, end=" : ")
+        if self.operator == "=":
+            return self.variableBlock.value == self.number
+        elif self.operator == "<":
+            return self.variableBlock.value < self.number
+        elif self.operator == "<=":
+            return self.variableBlock.value <= self.number
+        elif self.operator == ">":
+            return self.variableBlock.value > self.number
+        elif self.operator == ">=":
+            return self.variableBlock.value >= self.number
+
+    def draw(self,canvas,canvasBounds,trashcan):
+        c = super().draw(canvas,canvasBounds,trashcan)
+        x1,y1 = self.x+self.margin, self.y+self.height//2
+        x2,y2 = x1+10,y1+10
+        if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
+            canvas.create_text(x1,y1, text = "If", anchor=W)
+        x1,y1 = self.x+110,self.y+self.height//2
+        x2,y2 = x1+10,y1+10
+        if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
+            canvas.create_text(x1,y1,text="is", anchor=W)
+        #left bar
+        x1,y1,x2,y2 = self.x2,self.y2,self.x2+self.w2,self.y2+self.h2
+        x1,y1,x2,y2 = Block.changeBounds(x1,y1,x2,y2,canvasBounds)
+        if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
+            canvas.create_rectangle(x1,y1,x2,y2,fill=c)
+        #bottom bar
+        x1,y1,x2,y2 = self.x3,self.y3,self.x3+self.w3,self.y3+self.h3
+        x1,y1,x2,y2 = Block.changeBounds(x1,y1,x2,y2,canvasBounds)
+        if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
+            canvas.create_rectangle(x1,y1,x2,y2,fill=c)
+            if x2 < canvasBounds[2]-15 and y1 > canvasBounds[1]-15 and x2 > canvasBounds[0] + 15:
+                self.growButton.draw(canvas)
         for textbox in self.textboxes:
             if textbox.isInBounds(canvasBounds):
                 textbox.draw(canvas)
@@ -516,12 +701,15 @@ class IfTouchingBlock(Block):
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_text(x1,y1,text="is touching", anchor=W)
         x1,y1,x2,y2 = self.x2,self.y2,self.x2+self.w2,self.y2+self.h2
+        x1,y1,x2,y2 = Block.changeBounds(x1,y1,x2,y2,canvasBounds)
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_rectangle(x1,y1,x2,y2,fill=c)
         x1,y1,x2,y2 = self.x3,self.y3,self.x3+self.w3,self.y3+self.h3
+        x1,y1,x2,y2 = Block.changeBounds(x1,y1,x2,y2,canvasBounds)
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_rectangle(x1,y1,x2,y2,fill=c)
-            self.growButton.draw(canvas)
+            if x2 < canvasBounds[2]-15 and y1 > canvasBounds[1]-15 and x2 > canvasBounds[0] + 15:
+                self.growButton.draw(canvas)
         for textbox in self.textboxes:
             if textbox.isInBounds(canvasBounds):
                 textbox.draw(canvas)
@@ -824,12 +1012,15 @@ class IfKeyPressedBlock(Block):
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_text(x1,y1,text="key is pressed", anchor=W)
         x1,y1,x2,y2 = self.x2,self.y2,self.x2+self.w2,self.y2+self.h2
+        x1,y1,x2,y2 = Block.changeBounds(x1,y1,x2,y2,canvasBounds)
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_rectangle(x1,y1,x2,y2,fill=c)
         x1,y1,x2,y2 = self.x3,self.y3,self.x3+self.w3,self.y3+self.h3
+        x1,y1,x2,y2 = Block.changeBounds(x1,y1,x2,y2,canvasBounds)
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_rectangle(x1,y1,x2,y2,fill=c)
-            self.growButton.draw(canvas)
+            if x2 < canvasBounds[2]-15 and y1 > canvasBounds[1]-15 and x2 > canvasBounds[0] + 15:
+                self.growButton.draw(canvas)
         for textbox in self.textboxes:
             if textbox.isInBounds(canvasBounds):
                 textbox.draw(canvas)
@@ -947,12 +1138,15 @@ class IfArrowKeyPressedBlock(Block):
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_text(x1,y1,text="key is pressed", anchor=W)
         x1,y1,x2,y2 = self.x2,self.y2,self.x2+self.w2,self.y2+self.h2
+        x1,y1,x2,y2 = Block.changeBounds(x1,y1,x2,y2,canvasBounds)
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_rectangle(x1,y1,x2,y2,fill=c)
         x1,y1,x2,y2 = self.x3,self.y3,self.x3+self.w3,self.y3+self.h3
+        x1,y1,x2,y2 = Block.changeBounds(x1,y1,x2,y2,canvasBounds)
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_rectangle(x1,y1,x2,y2,fill=c)
-            self.growButton.draw(canvas)
+            if x2 < canvasBounds[2]-15 and y1 > canvasBounds[1]-15 and x2 > canvasBounds[0] + 15:
+                self.growButton.draw(canvas)
         for textbox in self.textboxes:
             if textbox.isInBounds(canvasBounds):
                 textbox.draw(canvas)
@@ -974,7 +1168,7 @@ class VariableBlock(Block):
         self.nameBox = TextBox(self.x+10,self.y+10,60,20,self.name)
         self.valueBox = TextBox(self.x+100,self.y+10,60,20,self.value)
         self.textboxes = [self.nameBox, self.valueBox]
-        #self.instanceButton = MyButton(self.x+self.width,self.y,10,self.height,"chocolate2","variableInstance")
+        self.display = False
 
     def __eq__(self,other):
         if type(other) == VariableBlock:
@@ -983,6 +1177,13 @@ class VariableBlock(Block):
 
     def __repr__(self):
         return str(self.name) 
+
+    def reset(self,trashcan,blocks,variables):
+    #'deselects' and 'unconnects' blocks and deletes ones in trashcan
+        self.drag, self.overlap = False, False
+        if self.isInTrashcan(trashcan) and self.type != "start":
+            blocks.remove(self)
+            variables.remove(self)
 
     def copy(self):
         x = self.x
@@ -997,6 +1198,7 @@ class VariableBlock(Block):
         copy.nameBox = self.nameBox
         copy.valueBox = self.valueBox
         copy.textboxes = self.textboxes
+        copy.display = self.display
         return copy
 
     def moveTextbox(self):
@@ -1014,9 +1216,8 @@ class VariableBlock(Block):
         if self not in data.runVariables:
             data.runVariables.append(self)
         else:
-            data.runVariables.remove(self)
-            data.runVariables.append(self)
-        #print("   runVars:",data.runVariables)
+            i = data.runVariables.index(self)
+            data.runVariables[i] = self
         self.ran = True
 
     def draw(self, canvas, canvasBounds,trashcan):
@@ -1084,7 +1285,10 @@ class VariableInstanceBlock(Block):
         
     def run(self,data):
         self.updateParams(data)
+        print("   setting",self.name, "to",self.value)
+        print("  ",type(self.name))
         for variable in data.runVariables:
+            print("    ",variable,self.name==variable)
             if self.name == variable:
                 variable.value = self.value
         self.ran = True
@@ -1119,6 +1323,7 @@ class DisplayVariableBlock(Block):
         self.name = n
         self.nameBox = DropBox(self.x+60,self.y+10,60,20,variables,self.name)
         self.textboxes = [self.nameBox]
+        self.display = False
 
     def __eq__(self,other):
         if type(other) == DisplayVariableBlock:
@@ -1138,6 +1343,7 @@ class DisplayVariableBlock(Block):
         copy.nameBox = self.nameBox
         copy.textboxes = self.textboxes
         copy.variable = self.variable
+        copy.display = self.display
         return copy
 
     def moveTextbox(self):
@@ -1150,11 +1356,18 @@ class DisplayVariableBlock(Block):
         for var in data.runVariables:
             if type(self.name) == VariableBlock and var.name == self.name.name:
                 self.variable = var
-        
+
+    def reset(self,trashcan,blocks,variables=None):
+        super().reset(trashcan,blocks,variables)
+        try: self.variable.display = False
+        except: pass
+
     def run(self,data):
         self.updateParams(data)
-        x = data.canvasBounds[0] - data.screenBounds[0] + 20
-        y = data.canvasBounds[1] - data.screenBounds[1] + 20
+        self.variable.display = True
+        count = DisplayVariableBlock.getYPos(data, self.variable)
+        x = data.screenBounds[0] + 20
+        y = data.screenBounds[1] + 30*count - 10
         w = max((len(str(self.name)) + len(str(self.variable.value)))*10,50)
         figure = Figure(x,y,w,20,"gold",self.name,data.propertyBoxBounds,data,self.variable)
         if figure in data.figureCopies:
@@ -1162,6 +1375,14 @@ class DisplayVariableBlock(Block):
         data.figureCopies.append(figure)
         #print("FIGURES:",data.figureCopies)
         self.ran = True
+
+    @staticmethod
+    def getYPos(data, variable):
+        count = 0
+        for var in data.runVariables:
+            count += 1
+            if variable == var: return count
+        return count
 
     def draw(self, canvas, canvasBounds,trashcan):
         super().draw(canvas,canvasBounds,trashcan)
@@ -1223,7 +1444,7 @@ class ChangeVariableBlock(Block):
 
     def updateParams(self,data):
         self.name = self.nameBox.text
-        try:self.value = int(self.valueBox.text)
+        try: self.value = int(self.valueBox.text)
         except: pass
         
     def run(self,data):
@@ -1369,12 +1590,15 @@ class LoopBlock(Block):
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_text(x1,y1,text="times", anchor=W)
         x1,y1,x2,y2 = self.x2,self.y2,self.x2+self.w2,self.y2+self.h2
+        x1,y1,x2,y2 = Block.changeBounds(x1,y1,x2,y2,canvasBounds)
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_rectangle(x1,y1,x2,y2,fill=c)
         x1,y1,x2,y2 = self.x3,self.y3,self.x3+self.w3,self.y3+self.h3
+        x1,y1,x2,y2 = Block.changeBounds(x1,y1,x2,y2,canvasBounds)
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_rectangle(x1,y1,x2,y2,fill=c)
-            self.growButton.draw(canvas)
+            if x2 < canvasBounds[2]-15 and y1 > canvasBounds[1]-15 and x2 > canvasBounds[0] + 15:
+                self.growButton.draw(canvas)
         for textbox in self.textboxes:
             if textbox.isInBounds(canvasBounds):
                 textbox.draw(canvas)
@@ -1391,7 +1615,7 @@ class WhileLoopBlock(Block):
         self.margin = 10
         self.v = variables
         super().__init__(x,y,self.w1,self.h1)
-        self.color = "mediumo"
+        self.color = "mediumorchid2"
         self.x2 = self.x
         self.y2 = self.y + self.h1
         self.w2 = 20
@@ -1508,12 +1732,15 @@ class WhileLoopBlock(Block):
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_text(x1,y1,text="is", anchor=W)
         x1,y1,x2,y2 = self.x2,self.y2,self.x2+self.w2,self.y2+self.h2
+        x1,y1,x2,y2 = Block.changeBounds(x1,y1,x2,y2,canvasBounds)
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_rectangle(x1,y1,x2,y2,fill=c)
         x1,y1,x2,y2 = self.x3,self.y3,self.x3+self.w3,self.y3+self.h3
+        x1,y1,x2,y2 = Block.changeBounds(x1,y1,x2,y2,canvasBounds)
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_rectangle(x1,y1,x2,y2,fill=c)
-            self.growButton.draw(canvas)
+            if x2 < canvasBounds[2]-15 and y1 > canvasBounds[1]-15 and x2 > canvasBounds[0] + 15:
+                self.growButton.draw(canvas)
         for textbox in self.textboxes:
             if textbox.isInBounds(canvasBounds):
                 textbox.draw(canvas)
@@ -1615,12 +1842,15 @@ class ForeverLoopBlock(Block):
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_text(x1,y1, text = "Loop forever", anchor=W)
         x1,y1,x2,y2 = self.x2,self.y2,self.x2+self.w2,self.y2+self.h2
+        x1,y1,x2,y2 = Block.changeBounds(x1,y1,x2,y2,canvasBounds)
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_rectangle(x1,y1,x2,y2,fill=c)
         x1,y1,x2,y2 = self.x3,self.y3,self.x3+self.w3,self.y3+self.h3
+        x1,y1,x2,y2 = Block.changeBounds(x1,y1,x2,y2,canvasBounds)
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_rectangle(x1,y1,x2,y2,fill=c)
-            self.growButton.draw(canvas)
+            if x2 < canvasBounds[2]-15 and y1 > canvasBounds[1]-15 and x2 > canvasBounds[0] + 15:
+                self.growButton.draw(canvas)
 
 ####################################
 # Edge Bounce Block Class
@@ -1809,7 +2039,7 @@ class BounceRandomBlock(Block):
         x1,y1 = self.x+10,self.y+self.height//2
         x2,y2 = x1+30,y1+10
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
-            canvas.create_text(x1,y1,text = "Bounce", anchor=W)
+            canvas.create_text(x1,y1,text = "Move", anchor=W)
         x1,y1 = self.x+130,self.y+self.height//2
         x2,y2 = x1+30,y1+10
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
@@ -1889,35 +2119,6 @@ class MoveTowardsBlock(Block):
         x2,y2 = x1+30,y1+10
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_text(x1,y1,text = "towards", anchor=W)
-
-####################################
-# Jump Block Class
-####################################
-
-class JumpBlock(Block):
-
-    def __init__(self,jumpTo):
-        self.jumpTo = jumpTo
-        self.endTag = None
-
-    def __repr__(self):
-        return "JumpBlock to " + str(self.jumpTo)
-
-    def copy(self):
-        j = self.jumpTo
-        copy = JumpBlock(j)
-        copy.posTag = self.posTag
-        return copy
-
-    def run(self,data,endIndex):
-        #data.key = None
-        for i in range(self.jumpTo,endIndex):
-            #print("     resetting:", data.queue[i])
-            data.queue[i].ran = False
-            data.queue[i].setTarget()
-            if i>self.jumpTo and type(data.queue[i]) in {LoopBlock, IfBlock, IfTouchingBlock}:
-                data.queue[i].currentLoop = 0
-        return self.jumpTo
 
 ####################################
 # Move Block Class
@@ -2065,6 +2266,35 @@ class MoveBlock(Block):
         if Block.isInBounds(x1,y1,x2,y2,canvasBounds):
             canvas.create_text(x1,y1,text = "pixels", anchor=W)
 
+####################################
+# Jump Block Class
+####################################
+
+class JumpBlock(Block):
+
+    def __init__(self,jumpTo):
+        self.jumpTo = jumpTo
+        self.endTag = None
+
+    def __repr__(self):
+        return "JumpBlock to " + str(self.jumpTo)
+
+    def copy(self):
+        j = self.jumpTo
+        copy = JumpBlock(j)
+        copy.posTag = self.posTag
+        return copy
+
+    def run(self,data,endIndex):
+        #data.key = None
+        for i in range(self.jumpTo,endIndex):
+            #print("     resetting:", data.queue[i])
+            data.queue[i].ran = False
+            data.queue[i].setTarget()
+            if i>self.jumpTo and type(data.queue[i]) in {LoopBlock, IfBlock, IfTouchingBlock}:
+                data.queue[i].currentLoop = 0
+        return self.jumpTo
+
 ##################################################################################
 ##################################################################################
 ##################################################################################
@@ -2097,9 +2327,12 @@ class MyButton(object):
         y1 = self.y
         x2 = x1 + self.width
         y2 = y1 + self.height
-        if vertical: 
+        if vertical == None:
             canvas.create_rectangle(x1,y1,x2,y2,fill=self.color)
-            if self.type == "UI":
+            canvas.create_text(x1+self.width//2,y1+self.height//2,text=self.title)
+        elif vertical: 
+            canvas.create_rectangle(x1,y1,x2,y2,fill=self.color)
+            if self.type in {"UI","scroll"}:
                 canvas.create_text(x1+self.width//2,y1+self.height//2,text=self.title)
         elif x1<codeWidth:
             if x2 > codeWidth: x2 = codeWidth
@@ -2166,6 +2399,7 @@ class BlockButton(MyButton):
             elif self.type == "ifTouching": block = IfTouchingBlock(x1,y1,data.figures)
             elif self.type == "bounce": block = BounceBlock(x1,y1,data.figures)
             elif self.type == "arrowPressed": block = IfArrowKeyPressedBlock(x1,y1)
+            elif self.type == "ifmath": block = IfMathBlock(x1,y1,data.variables)
             elif self.type == "variable": 
                 block = VariableBlock(x1,y1)
                 data.variables.append(block)

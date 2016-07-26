@@ -49,6 +49,19 @@ class TextBox(object):
     def __repr__(self):
         return str(self.text) + "   " + str(self.defaultText)
 
+    def copy(self):
+        x = self.x
+        y = self.y
+        w = self.width
+        h = self.height
+        text = self.text
+        copy = TextBox(x,y,w,h,text)
+        copy.typeError = self.typeError
+        copy.border = self.border
+        copy.wasClicked = self.wasClicked
+        copy.allowChange = self.allowChange
+        return copy
+
     def clicked(self,x,y):
     #returns true if a textBox was clicked
         if self.x<x<self.x+self.width and self.y<y<self.y+self.height:
@@ -101,6 +114,20 @@ class DropBox(TextBox):
                     self.text = self.options[i-1]
                     self.wasClicked = False
                     return self.text
+
+    def copy(self):
+        x = self.x
+        y = self.y
+        w = self.width
+        h = self.height
+        o = self.options
+        text = self.text
+        copy = DropBox(x,y,w,h,o,text)
+        copy.typeError = self.typeError
+        copy.border = self.border
+        copy.wasClicked = self.wasClicked
+        copy.allowChange = self.allowChange
+        return copy
 
     def clicked(self,x,y):
     #drops down box and allows user to select an option

@@ -46,6 +46,10 @@ def run(width=300, height=300):
         keyPressed(event, canvas, data)
         redrawAllWrapper(canvas, data)
 
+    def controlClickWrapper(event,canvas,data):
+        controlClick(event,data)
+        redrawAllWrapper(canvas,data)
+
     def timerFiredWrapper(canvas, data):
         timerFired(data)
         redrawAllWrapper(canvas, data)
@@ -72,6 +76,7 @@ def run(width=300, height=300):
     root.bind("<B1-Motion>", lambda event: leftMouseMovedWrapper(event, canvas, data))
     root.bind("<B3-Motion>", lambda event: rightMouseMovedWrapper(event, canvas, data))
     root.bind("<B3-ButtonRelease>", lambda event: rightMouseReleasedWrapper(event,canvas,data))
+    root.bind("<Control-1>",lambda event: controlClickWrapper(event,canvas,data))
     # and launch the app
     root.mainloop()  # blocks until window is closed
 

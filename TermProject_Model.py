@@ -9,10 +9,13 @@ def init(data):
     initVerticalSB(data)
     initCanvasAndBlocks(data)
     initUIButtons(data)
+    initScrollButtons(data)
     snapToGrid(data)
     data.figureCopies = []
     data.resize = False
     data.key = None 
+    data.xClick = 0
+    data.yClick = 0
 
 def initHorizontalSB(data):
     data.sbHeight = 60
@@ -38,13 +41,29 @@ def initUIButtons(data):
     chase = MyButton(x,h*4+data.margin*5,w,h,"powderblue","UI","Chase Game")
     data.UIButtons = [go,save,load,restart,chase]
 
+def initScrollButtons(data):
+    w = 20
+    x1 = data.margin + w*1
+    x2 = data.margin + w*2
+    x3 = data.margin + w*3
+    y1 = data.height - data.margin*2 - w*3
+    y2 = data.height - data.margin*2 - w*2
+    y3 = data.height - data.margin*2 - w*1
+    up = MyButton(x2,y1,w,w,"powderblue","scroll","^")
+    down = MyButton(x2,y3,w,w,"powderblue","scroll","v")
+    left = MyButton(x1,y2,w,w,"powderblue","scroll","<")
+    right = MyButton(x3,y2,w,w,"powderblue","scroll",">")
+    data.scrollButtons = [up,down,left,right]
+
 def initHorizontalButtons(data):
     h = data.sbHeight - 2*data.margin
     w = h + 12
     c0,c1,c2,c3 = ("indianred1","gold","turquoise1","mediumorchid2")
+    howTo = MyButton(0,0,w,h,"powderblue","help","HELP")
     b0 = BlockButton(0,0,w,h,c0,"if", "if")
     b1 = BlockButton(0,0,w,h,c0,"keypressed"," key\npress")
     b2 = BlockButton(0,0,w,h,c0,"arrowPressed","arrow\npress")
+    b3 = BlockButton(0,0,w,h,c0,"ifmath","   if\nmath")
     #b3 = BlockButton(0,0,w,h,c0,"ifElse","if else")
     b4 = BlockButton(0,0,w,h,c0,"ifTouching","touching\n   figure")
     b5 = BlockButton(0,0,w,h,c1,"variable","  new\nvariable")
@@ -59,10 +78,10 @@ def initHorizontalButtons(data):
     b14 = BlockButton(0,0,w,h,c3,"loop","loop")
     b15 = BlockButton(0,0,w,h,c3,"while","while\n loop")
     b16 = BlockButton(0,0,w,h,c3,"forever","forever\n  loop")
-    data.horizontalButtons = [b0,b1,b2,b4,b5,b6,b7,b8,b9,b10,b11,b12,b14,b15,b16]
+    data.horizontalButtons = [howTo,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12,b14,b15,b16]
     addHorizontalButtonLocs(data)
     data.minHStart = data.sbShift
-    data.maxHStop = data.codeWidth - ((len(data.horizontalButtons)+1)*data.margin + buttonWidthSum(data))
+    data.maxHStop = min(data.codeWidth, data.codeWidth - ((len(data.horizontalButtons)+1)*data.margin + buttonWidthSum(data)))
 
 def initVerticalSB(data):
     data.sbHeight = 60
@@ -138,6 +157,8 @@ def initCanvasAndBlocks(data):
     y2 = y1 + height
     data.screenBounds = [x1,y1,x2,y2]
     data.exitScreen = MyButton(x2-20, y1+10,10,10,"red","exitScreen")
+    data.displayHelpScreen = True
+    data.exitHelpScreen = MyButton(data.width-70,data.margin,60,30,"powderblue","help","EXIT")
 
 ####################################
 # Helper Functions
@@ -169,17 +190,21 @@ def addHorizontalButtonLocs(data):
         bNum += 1
         bWidth += button.width
 
-def addVerticalButtonLocs(data): 
+def addVerticalButtonLocs(data,onlyX=False): 
 #add button locations to buttons
     bNum = 1
     bWidth = data.sbShift
     x = data.sbX + data.margin
-    for button in data.verticalButtons:
-        y = data.margin*bNum + bWidth
-        button.x = x
-        button.y = y
-        bNum += 1
-        bWidth += button.width
+    if onlyX:
+        for button in data.verticalButtons:
+            button.x = x
+    else:
+        for button in data.verticalButtons:
+            y = data.margin*bNum + bWidth
+            button.x = x
+            button.y = y
+            bNum += 1
+            bWidth += button.width
 
 def updateButtonLocs(data):
 #update buttonLoc list while scrolling
@@ -190,21 +215,18 @@ def updateButtonLocs(data):
         button.x += data.d_hScroll
     data.d_hScroll = 0
 
-def deleteUnusedBlocks(data): 
+def deleteUnusedBlocks(event,data): 
 #deletes blocks not dragged onto canvas
-    for block in data.blocks:
-        for button in data.horizontalButtons:
-            if block.x == button.x and block.y == button.y:
-                data.blocks.pop(data.blocks.index(block))
-                #note: could accidentally delete a panned off-screen bloc
+    for button in data.horizontalButtons:
+        if button.wasClicked(event.x,event.y) and abs(data.xClick-event.x) < 30 and abs(data.yClick-event.y) < 30:
+            if len(data.blocks) > 1:
+                data.blocks.pop()
 
-def deleteUnusedfigures(data): 
+def deleteUnusedfigures(event,data): 
 #deletes figures not dragged onto canvas
-    for figure in data.figures:
-        for button in data.verticalButtons:
-            if figure.x == button.x and figure.y == button.y:
-                data.figures.pop(data.figures.index(figure))
-                #note: could accidentally delete a panned off-screen figure
+    for button in data.verticalButtons:
+        if button.wasClicked(event.x,event.y) and abs(data.xClick-event.x) < 30 and abs(data.yClick-event.y) < 30:
+            data.figures.pop()
 
 def snapToGrid(data): 
 #snaps the blocks to a 10 pixel grid
@@ -214,7 +236,7 @@ def snapToGrid(data):
 def resetBlocks(data): 
 #'unconnects' and 'unselects' all blocks and deletes blocks in trashcan
     for block in data.blocks:
-        block.reset(data.codetrashcan,data.blocks)
+        block.reset(data.codetrashcan,data.blocks,data.variables)
 
 def resetfigures(data): 
 #'unselects' all figures and deletes figures in trashcan

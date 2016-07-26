@@ -7,7 +7,7 @@ from tkinter import *
 class ErrorBox(object):
 
     def __init__(self, x, y):
-        self.text = "Typing Error: Only letters, numbers, and underscore characters"
+        self.text = "Typing Error: Only letters, numbers, dashes, and underscore characters"
         self.color = "red"
         self.x = x
         self.y = y
